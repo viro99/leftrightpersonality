@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Personality Quiz</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #181818;
+            color: #f0f0f0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+        .quiz-container {
+            background: #232323;
+            padding: 2em 2em 1em 2em;
+            border-radius: 12px;
+            margin-top: 3em;
+            box-shadow: 0 4px 24px #0008;
+            max-width: 700px;
+            width: 100%;
+        }
+        .question-row {
+            display: flex;
+            gap: 1em;
+            margin-bottom: 1em;
+        }
+        .quiz-btn {
+            flex: 1;
+            padding: 1em;
+            font-size: 1em;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            background: #444;
+            color: #fff;
+            transition: background 0.2s;
+        }
+        .quiz-btn:hover {
+            background: #666;
+        }
+        .other-section {
+            margin-top: 1em;
+            background: #292929;
+            padding: 1em;
+            border-radius: 8px;
+        }
+        .score-board {
+            text-align: center;
+            margin-top: 2em;
+        }
+        .submit-btn {
+            margin-top: 1em;
+            background: #2e8b57;
+        }
+        input[type="text"] {
+            width: 100%;
+            padding: 0.5em;
+            border-radius: 5px;
+            border: 1px solid #555;
+            margin-top: 0.5em;
+            background: #181818;
+            color: #fff;
+        }
+        label {
+            display: block;
+            margin-top: 0.5em;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1em;
+            background: #232323;
+            color: #f0f0f0;
+        }
+        th, td {
+            border: 1px solid #444;
+            padding: 0.5em;
+            text-align: left;
+            font-size: 0.95em;
+        }
+        th {
+            background: #181818;
+        }
+        .other-note {
+            color: #b0e57c;
+            font-size: 0.95em;
+        }
+        .copy-btn {
+            margin-top: 1em;
+            background: #357edd;
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            padding: 0.7em 1.5em;
+            cursor: pointer;
+            font-size: 1em;
+        }
+        .copy-btn:hover {
+            background: #285ea8;
+        }
+        .copied-msg {
+            color: #b0e57c;
+            margin-top: 0.5em;
+            font-size: 1em;
+        }
+    </style>
+</head>
+<body>
+    <div class="quiz-container" id="quiz">
+        <div id="question-section">
+            <div class="question-row">
+                <button class="quiz-btn" id="leftBtn"></button>
+                <button class="quiz-btn" id="rightBtn"></button>
+            </div>
+            <button class="quiz-btn" id="otherBtn" style="width:100%;">Other</button>
+        </div>
+        <div id="other-section" class="other-section" style="display:none;">
+            <label for="slider">Rate your agreement (1-5):</label>
+            <input type="range" min="1" max="5" value="3" id="slider">
+            <label for="explanation">Add explanation:</label>
+            <input type="text" id="explanation" placeholder="Type your explanation here...">
+            <button class="quiz-btn submit-btn" id="submitOtherBtn">Submit</button>
+        </div>
+        <div id="score-board" class="score-board" style="display:none;"></div>
+    </div>
+    <script>
+        const left = [
+            "Humans are perfectible",
+            "Good people in power can save the world",
+            "The future is all progress",
+            "The only real things are materially what you see",
+            "Inequality comes from oppression",
+            "Everyone is a blank slate which are socialized",
+            "Cultural differences are arbitrary and can easily be transcended",
+            "Tradition holds us back",
+            "It's wrong to judge someone by their results",
+            "You have loyalty to all humanity, not your people"
+        ];
+        const right = [
+            "Humans are inherently flawed",
+            "Power corrupts",
+            "It's possible to degrade back into barbarism",
+            "There is a God",
+            "Inequality is normal",
+            "Races, classes and the sexes are genetically different",
+            "Cultural differences are important",
+            "Tradition is valuable even if we don't understand why",
+            "You can assess things by competency",
+            "You have loyalty to your group over others"
+        ];
+
+        let scoreLeft = 0;
+        let scoreRight = 0;
+        let current = 0;
+        let responses = [];
+
+        const leftBtn = document.getElementById('leftBtn');
+        const rightBtn = document.getElementById('rightBtn');
+        const otherBtn = document.getElementById('otherBtn');
+        const otherSection = document.getElementById('other-section');
+        const slider = document.getElementById('slider');
+        const explanation = document.getElementById('explanation');
+        const submitOtherBtn = document.getElementById('submitOtherBtn');
+        const scoreBoard = document.getElementById('score-board');
+        const questionSection = document.getElementById('question-section');
+
+        function showQuestion() {
+            leftBtn.textContent = left[current];
+            rightBtn.textContent = right[current];
+            otherSection.style.display = 'none';
+            questionSection.style.display = '';
+            explanation.value = '';
+            slider.value = 3;
+        }
+
+        function showScore() {
+            questionSection.style.display = 'none';
+            otherSection.style.display = 'none';
+            scoreBoard.style.display = '';
+
+            // Build summary table
+            let table = `
+                <h2>Quiz Complete!</h2>
+                <p>Left Score: <b>${scoreLeft}</b> | Right Score: <b>${scoreRight}</b></p>
+                <h3>Your Responses</h3>
+                <table>
+                    <tr>
+                        <th>#</th>
+                        <th>Left Statement</th>
+                        <th>Right Statement</th>
+                        <th>Your Response</th>
+                    </tr>
+            `;
+            for (let i = 0; i < left.length; i++) {
+                let resp = responses[i];
+                let respStr = "";
+                if (resp.type === "left") {
+                    respStr = "Left";
+                } else if (resp.type === "right") {
+                    respStr = "Right";
+                } else if (resp.type === "other") {
+                    respStr = `<span class="other-note">Other (Score: ${resp.score}, Note: ${resp.explanation ? resp.explanation : "No explanation"})</span>`;
+                }
+                table += `
+                    <tr>
+                        <td>${i + 1}</td>
+                        <td>${left[i]}</td>
+                        <td>${right[i]}</td>
+                        <td>${respStr}</td>
+                    </tr>
+                `;
+            }
+            table += `</table>
+                <button class="copy-btn" onclick="copyResults()">Copy Results</button>
+                <div id="copiedMsg" class="copied-msg" style="display:none;">Copied!</div>
+                <p style="margin-top:1em;font-style:italic;">Copy and share your results with friends!</p>
+            `;
+            scoreBoard.innerHTML = table;
+        }
+
+        leftBtn.onclick = () => {
+            scoreLeft += 1;
+            responses.push({type: "left"});
+            nextQuestion();
+        };
+        rightBtn.onclick = () => {
+            scoreRight += 1;
+            responses.push({type: "right"});
+            nextQuestion();
+        };
+        otherBtn.onclick = () => {
+            otherSection.style.display = '';
+            questionSection.style.display = 'none';
+        };
+        submitOtherBtn.onclick = () => {
+            const score = parseInt(slider.value, 10);
+            const expl = explanation.value;
+            responses.push({type: "other", score: score, explanation: expl});
+            if (score <= 2) scoreLeft += 1;
+            else if (score >= 4) scoreRight += 1;
+            // Neutral (3) does not add to either
+            nextQuestion();
+        };
+
+        function nextQuestion() {
+            current += 1;
+            if (current >= left.length) {
+                showScore();
+            } else {
+                showQuestion();
+            }
+        }
+
+        // Copy results to clipboard as plain text
+        window.copyResults = function() {
+            let text = `Personality Quiz Results\nLeft Score: ${scoreLeft} | Right Score: ${scoreRight}\n\n`;
+            text += "Question # | Left Statement | Right Statement | Your Response\n";
+            text += "-".repeat(90) + "\n";
+            for (let i = 0; i < left.length; i++) {
+                let resp = responses[i];
+                let respStr = "";
+                if (resp.type === "left") {
+                    respStr = "Left";
+                } else if (resp.type === "right") {
+                    respStr = "Right";
+                } else if (resp.type === "other") {
+                    respStr = `Other (Score: ${resp.score}, Note: ${resp.explanation ? resp.explanation : "No explanation"})`;
+                }
+                text += `${i + 1} | ${left[i]} | ${right[i]} | ${respStr}\n`;
+            }
+            navigator.clipboard.writeText(text).then(() => {
+                document.getElementById('copiedMsg').style.display = '';
+                setTimeout(() => {
+                    document.getElementById('copiedMsg').style.display = 'none';
+                }, 1500);
+            });
+        };
+
+        // Initialize first question
+        showQuestion();
+    </script>
+</body>
+</html>
